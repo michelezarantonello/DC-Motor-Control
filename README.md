@@ -1,8 +1,12 @@
 This repository collects all the projects developed during the Control Engineering Laboratory (CELAB) course at the University of Padova.
-The course focuses on applying control design techniques to real laboratory systems, from basic PID tuning to advanced state-space and optimal control. All controllers were designed and tested using MATLAB and Simulink, and later implemented on physical setups such as DC motors and a balancing robot.
-Throughout the course, different control methods were explored and progressively improved. The experiments covered both theoretical design and real-world implementation, considering model uncertainties, noise, and actuator limits.
+The course focuses on applying control design techniques to real laboratory systems, from basic PID tuning to advanced state-space and optimal control. All controllers were designed and tested using MATLAB and Simulink, and later implemented on physical setups such as DC motors and a balancing robot. The experiments covered both theoretical design and real-world implementation, considering model uncertainties, noise, and actuator limits.
+
 **LAB0**: design of a PID position controller for a DC motor using Bode’s frequency method. Static and viscous friction were estimated experimentally to refine the model for later use.
+
 **LAB1**: the initial controller was enhanced with anti-windup protection and feedforward compensation for friction and inertia. The second part introduced state-space control with both nominal and robust tracking, applying the internal model principle to handle disturbances and time-varying references.
+
 **LAB2**: dealt with digital control: a discrete-time position controller was designed both by emulation and directly in the discrete domain, highlighting the impact of sampling and discretization.
+
 **LAB3**: dealt with a DC motor driving a flexible beam, modeled as a two-mass system. Here, both PID and state-space controllers were designed, including eigenvalue placement and frequency-shaped LQR methods for performance and robustness.
+
 **LAB4**: focused on the longitudinal control of a two-wheeled balancing robot. A state-space controller was designed to stabilize the inherently unstable system and move it to a desired position, showing robustness against external disturbances. A video demonstration of the robot in action is also included (https://youtube.com/shorts/GmH9iNtEBmc?si=Ej6kAnR3sPeJH7Ax).
