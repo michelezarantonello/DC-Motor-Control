@@ -4,4 +4,4 @@ The provided PDF file contains the full report for this third lab, including the
 For an overview, you can start by reading the introduction section of the report.
 At the end of the document, some MATLAB code snippets and Simulink model references are provided.
 The complete MATLAB scripts and Simulink models for all four laboratory projects are included in this repository, organized in their respective LABx folders.
-Additionally, a video demonstration is included (https://github.com/michelezarantonello/dc-motor-control/VIDEO_LAB4_Controller.mp4), showing how the robot — which is inherently unstable — is stabilized and controlled using the controller designed in Lab 4, which is robust to external disturbances.
+Additionally, a video demonstration is included (https://github.com/michelezarantonello/dc-motor-control/blob/main/VIDEO_LAB4_Controller.mp4), showing how the robot — which is inherently unstable — is stabilized and controlled using the controller designed in Lab 4, which is robust to external disturbances.
