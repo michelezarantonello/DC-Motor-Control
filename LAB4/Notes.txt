@@ -1,0 +1,2 @@
+Holonomic Constraints for Lagrangian Modeling:
+https://en.wikipedia.org/wiki/Holonomic_constraints#:~:text=a%20nonholonomic%20constraint.-,Introduction,moved%20relative%20to%20each%20other.
