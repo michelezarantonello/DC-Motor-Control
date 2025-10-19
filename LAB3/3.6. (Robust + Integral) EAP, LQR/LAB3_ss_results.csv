@@ -1,0 +1,4 @@
+Controller,RefAmplitude_deg,RiseTime,SettlingTime,Overshoot
+Eigenvalue Placement,50,0.16425,1.78525,62.9090909090909
+Scalar LQR,50,0.162083333333333,2.02905,44.8028673835126
+Matrix LQR (via Bryson),50,0.1473,1.68915,44.043321299639
