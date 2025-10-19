@@ -5,7 +5,4 @@ Throughout the course, different control methods were explored and progressively
 **LAB1**: the initial controller was enhanced with anti-windup protection and feedforward compensation for friction and inertia. The second part introduced state-space control with both nominal and robust tracking, applying the internal model principle to handle disturbances and time-varying references.
 **LAB2**: dealt with digital control: a discrete-time position controller was designed both by emulation and directly in the discrete domain, highlighting the impact of sampling and discretization.
 **LAB3**: dealt with a DC motor driving a flexible beam, modeled as a two-mass system. Here, both PID and state-space controllers were designed, including eigenvalue placement and frequency-shaped LQR methods for performance and robustness.
-**LAB4**: focused on the longitudinal control of a two-wheeled balancing robot. A state-space controller was designed to stabilize the inherently unstable system and move it to a desired position, showing robustness against external disturbances. A video demonstration of the robot in action is also included.
-(https://youtube.com/shorts/GmH9iNtEBmc?si=Ej6kAnR3sPeJH7Ax)
-GmH9iNtEBmc
-[![Watch the video](https://img.youtube.com/vi/<GmH9iNtEBmc>/hqdefault.jpg)](https://www.youtube.com/watch?v=<GmH9iNtEBmc>)
+**LAB4**: focused on the longitudinal control of a two-wheeled balancing robot. A state-space controller was designed to stabilize the inherently unstable system and move it to a desired position, showing robustness against external disturbances. A video demonstration of the robot in action is also included (https://youtube.com/shorts/GmH9iNtEBmc?si=Ej6kAnR3sPeJH7Ax).
