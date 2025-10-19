@@ -1,4 +1,7 @@
-In this accademic course we did 4 project and in the end we had to do a report on one of them chosen randomly. In the pdf file there is the report for the third lab project. 
-To get an idea read the introduction part of the pdf and in the end there are some snippet for the controllers matlab code and simulink models for the simulations. I added 
-also the matlab code and simulink models for all the 4 projects, they are in the respective LAB folder. Here i upload also the video of the robot (that cant stand autonomously)
-that we stabilize and move thanks to the controller we built. 
+This repository contains materials related to the DC Motor Control laboratory project from the Control Engineering course.
+During the course, four lab projects were completed. At the end of the semester, one of them was randomly assigned for a detailed final report — in this case, Lab 3.
+The provided PDF file contains the full report for this third lab, including theoretical background, controller design, and simulation results.
+For an overview, you can start by reading the introduction section of the report.
+At the end of the document, some MATLAB code snippets and Simulink model references are provided.
+The complete MATLAB scripts and Simulink models for all four laboratory projects are included in this repository, organized in their respective LABx folders.
+Additionally, a video demonstration is included, showing how the robot — which is inherently unstable — is stabilized and controlled using the controller designed in Lab 4, which is robust to external disturbances.
