@@ -1,0 +1,159 @@
+%% SSM Control Design - Robust Tracking using Integral Action + ROO
+
+run('Plant_EstimTrialUpdateLAB17_04_25.m'); % defines Tm, km, N, etc.
+
+% Motor SSM Realization:
+
+A_c = [0  1 ; 0 -1/Tm];
+B_c = [0 ; km/(Tm*N)];
+C_c = [1 0];
+D_c = 0;
+
+
+Ae =  [0 C_c; [0;0] A_c];
+Be =  [0; B_c];
+Ce =  [0 C_c];
+De =  0;
+
+r_term = [1 ; 0];
+
+% Determining Nx, Nu by solving for M * [Nx Nu]^T = [0 1]^T
+M = [A_c B_c; C_c D_c];
+b = [0; 0; 1];
+
+Sol = M\b;
+
+Nx = Sol(1:2, :);
+Nu = Sol(3, :);
+
+% Required Performance Specifications
+ts_ss = 0.15; 
+mp_ss = 0.1; 
+ 
+% Determining delta and omega_n from desired ts and mp:
+
+delta = log(1/mp_ss) / sqrt(pi^2 + (log(1/mp_ss))^2);
+omega_n = 3 / (delta * ts_ss);
+
+% Use delta and omega_n to calculate the two (controller) eigenvalues:
+lambda1 = -delta * omega_n + 1i * omega_n * sqrt(1 - delta^2);
+lambda2 = -delta * omega_n - 1i * omega_n * sqrt(1 - delta^2);
+
+model_name =        'Model_statespacesystem';
+pos_ref_name =      'pos_ref_ssm';
+pos_meas_name =     'pos_meas_ssm';
+
+%% ROO Configuration Part
+
+% vector V of unobservable states
+V = [0,1];
+
+new_state = [C_c;V];
+
+% Since x = [theta_l; omega_l] already, T = I (no need for CoB)
+T = eye(2);
+
+y = C_c;
+v = V;
+
+A_11 = A_c(1,1);
+A_12 = A_c(1,2);
+A_21 = A_c(2,1);
+A_22 = A_c(2,2);
+
+B_1 = B_c(1,1);
+B_2 = B_c(2,1);
+
+% Set of candidate poles (1 of the 4 cases) taken from LAB1
+lambda1 = -20.0000 +27.2875i;
+lambda2 = -20.0000 -27.2875i;
+lambda3 = -20.0000 + 0.0000i;
+
+omega_n = abs(lambda1);   % natural frequency of controller mode
+p_obs = -5 * omega_n;     % observer pole 5x faster, real axis
+
+L_obs = place(A_22, A_12,p_obs);
+
+A_o = A_22 - L_obs*A_12;
+B_o = [B_2-L_obs*B_1, (A_22-L_obs*A_12)*L_obs + A_21-L_obs*A_11];
+C_o = T*[0;1];
+D_o = T*[0,1;0,L_obs];
+
+%% Function to allocate best pole to the feedback K:
+
+function [best_poles, all_results] = TuneIntegralPolePlacement(Ae, Be, model_name, pos_ref_name, pos_meas_name, delta, omega_n)
+
+    % precompute real and imaginary parts for controller poles
+    sigma    = -delta * omega_n;
+    omega_d  = omega_n * sqrt(1 - delta^2);
+
+    % candidate pole placements
+    eigenvalue_sets = {
+        [sigma+1i*omega_d, sigma-1i*omega_d, sigma];
+        [2*sigma+1i*omega_d, 2*sigma-1i*omega_d, 2*sigma];
+        [2*sigma+1i*omega_d, 2*sigma-1i*omega_d, 3*sigma]
+    };
+
+    Ncases = numel(eigenvalue_sets);
+
+    % init result table
+    all_results = table('Size',[Ncases 3], ...
+                        'VariableTypes',{'cell','double','double'}, ...
+                        'VariableNames',{'Poles','SettlingTime','Overshoot'});
+
+    % storage for every gain
+    K_store = cell(Ncases,1);
+
+    % loop through each candidate
+    for i = 1:Ncases
+        poles = eigenvalue_sets{i};
+
+        % design state-feedback for augmented system
+        K_stateFB = place(Ae, Be, poles);
+        K_store{i} = K_stateFB;               % store it
+        assignin('base','K_stateFB',K_stateFB);  % push to Simulink
+
+        % simulate
+        simOut = sim(model_name,'ReturnWorkspaceOutputs','on');
+
+        % extract measured and reference
+        yts = simOut.get(pos_meas_name);
+        rts = simOut.get(pos_ref_name);
+        t   = yts.Time;
+        y   = squeeze(yts.Data);
+        r   = interp1(rts.Time, rts.Data, t);
+
+        % step‐response metrics
+        S = stepinfo(y, t, r(end), 'SettlingTimeThreshold',0.05);
+
+        % save results
+        all_results.Poles{i}        = poles;
+        all_results.SettlingTime(i) = S.SettlingTime;
+        all_results.Overshoot(i)    = S.Overshoot;
+    end
+
+    % pick best: first min Overshoot, then min SettlingTime
+    [~, idx_min_os] = min(all_results.Overshoot);
+    % among any ties on overshoot, pick smallest settling
+    tied = find(all_results.Overshoot == all_results.Overshoot(idx_min_os));
+    [~, k] = min(all_results.SettlingTime(tied));
+    best_idx = tied(k);
+
+    % return best
+    best_poles = eigenvalue_sets{best_idx};
+    fprintf('→ Best case (%OS Priority) #%d: Overshoot=%.2f%%, SettlingTime=%.3fs\n', ...
+            best_idx, all_results.Overshoot(best_idx), all_results.SettlingTime(best_idx));
+
+    % re-assign the best gain into Simulink
+    assignin('base','K_stateFB', K_store{best_idx});
+
+    % display table, highlighting best row
+    disp('All candidates:'); 
+    disp(all_results);
+    disp('Best candidate highlighted below:');
+    disp(all_results(best_idx,:));
+end
+
+
+[best_results, full_results]=TuneIntegralPolePlacement(Ae, Be, model_name, pos_ref_name, pos_meas_name, delta, omega_n);
+

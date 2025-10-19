@@ -1,0 +1,204 @@
+%% Task 3: Step Reference Tracking Performance Test + ROO (Robust Integral)
+
+% This script tests the perfect step reference tracking control scheme
+% under robust conditions, with integrator action & ROO, for step amplitudes of 40, 70, and 120 degrees.
+% It computes rise time, settling time, and overshoot, stores results in a table,
+% and plots the performance trends.
+
+% Reference amplitudes to test (degrees)
+A_set = [40, 70, 120];
+
+
+run('StateSpace_Lab1.m');             % setup SSMs, tune the best feedback
+
+% Preallocate result table
+results = table('Size', [0, 4], ...
+    'VariableTypes', {'double','double','double','double'}, ...
+    'VariableNames', {'RefAmplitude_deg','RiseTime_s','SettlingTime_s','Overshoot_pct'});
+
+% Name of Simulink model (accurate model with controller already configured)
+
+% Open the DT model
+open_system('DTstatespacesystem');
+
+model_name = 'statespacesystem';  % replace with your model name if different
+
+% Loop over each reference amplitude
+for a = A_set
+    % Set the step block amplitude (in degrees)
+    set_param([model_name '/Position reference [deg]'], 'After', num2str(a));
+
+    % Run the simulation and return workspace outputs
+    simOut = sim(model_name, 'ReturnWorkspaceOutputs', 'on');
+
+    % Extract the measured position response (accurate model)
+    pos_acc = simOut.get('pos_meas_ssm');  % pos_meas_ssm is a Dataset
+    t_acc = pos_acc.Time;                  % Time is a vector
+    y_acc = pos_acc.Data;                  % Data is a vector
+
+    % Ensure both t_acc and y_acc are column vectors for stepinfo
+    t_acc = t_acc(:);  % Ensure it's a column vector
+    y_acc = y_acc(:);  % Ensure it's a column vector
+    
+    % Compute performance metrics using stepinfo
+    info = stepinfo(y_acc, t_acc, ...
+        'RiseTimeLimits', [0.1 0.9], ...    % 10%–90% rise time
+        'SettlingTimeThreshold', 0.05);     % 5% settling threshold
+
+    % Append results to table
+    results = [results; 
+        table(a, info.RiseTime, info.SettlingTime, info.Overshoot, ...
+              'VariableNames', results.Properties.VariableNames)];
+end
+
+% Display results in Command Window
+disp('Step Tracking Performance (Accurate Model)');
+disp(results);
+
+% Save results to CSV file
+outFile = 'Results_Appx_acc_ssm_Model.csv';
+writetable(results, outFile);
+fprintf('Results saved to %s\n', outFile);
+
+% Plot performance trends
+figure('Name', 'Performance Trends - Accurate Model');
+
+subplot(3,1,1);
+plot(results.RefAmplitude_deg, results.RiseTime_s, '-o', 'LineWidth', 1.5);
+ylabel('Rise Time (s)');
+title('Rise Time vs. Reference Amplitude');
+grid on;
+
+subplot(3,1,2);
+plot(results.RefAmplitude_deg, results.SettlingTime_s, '-o', 'LineWidth', 1.5);
+ylabel('Settling Time (s)');
+title('Settling Time vs. Reference Amplitude');
+grid on;
+
+subplot(3,1,3);
+plot(results.RefAmplitude_deg, results.Overshoot_pct, '-o', 'LineWidth', 1.5);
+ylabel('Overshoot (%)');
+xlabel('Reference Amplitude (deg)');
+title('Overshoot vs. Reference Amplitude');
+grid on;
+
+% Save plot as image
+saveas(gcf, fullfile(pwd, 'performance_trends_accurate.png'));
+
+% Close the continuous-time model
+bdclose('statespacesystem');
+
+%% Task 4: Discretization of the ROO + K Feedback (Regulator) using FE:
+% This is done by modifying (in the SSM block) the observer matrices.
+
+Phi_o = 1 + A_o*Ts;
+Ksi_o = B_o*Ts;
+
+% Open the DT model
+open_system('DT_statespacesystem');
+
+% Update model_name for all subsequent code
+model_name = 'DT_statespacesystem';
+
+% Optionally clear any lingering simOut or results
+clear simOut Results;
+
+step_ref = 'Position reference [deg]';
+
+T1 = 0.001;
+T2 = 0.01;
+T3 = 0.05;
+
+Ts_values = [T1, T2, T3];
+
+
+function ssm_50degStep(model_name, step_ref, Ts_values)
+
+    % Step reference (degrees)
+    A_ref = 50;
+
+    ctrlName = 'Discretized ROO - EF' 
+    
+    % Preallocate result table
+    Results = table('Size',[0 4], ...
+        'VariableTypes',{'double','double','double','double'}, ...
+        'VariableNames',{'Ts','RiseTime','SettlingTime','Overshoot'});
+    
+    % Simulation loop
+    for i = 1:length(Ts_values)
+        
+        Ts = Ts_values(i);
+    
+        % Set sampling time
+        assignin('base', 'Ts', Ts);                          
+               
+        % Set to 50 deg step
+        set_param([model_name '/' step_ref], 'After', num2str(A_ref));                
+        
+        % Manual system update
+        set_param(model_name, 'SimulationCommand', 'update');  
+    
+        % Run the Simulation
+        simOut = sim(model_name, 'StopTime', '5');
+        % Get measured position (assumes signal named 'pos_measured')
+        y = simOut.get('pos_meas_ssm').Data;
+        t = simOut.get('pos_meas_ssm').Time;
+    
+        % Extract performance metrics using stepinfo
+        S = stepinfo(y, t, A_ref, 'SettlingTimeThreshold', 0.05); 
+    
+    
+        % Append results to table
+        Results(i, :) = {Ts, S.RiseTime, S.SettlingTime, S.Overshoot};
+    
+    end
+    
+    % Display results
+    disp(Results)
+    
+    % Plot performance vs sampling time with poor results highlighted
+    figure;
+
+    % Indices corresponding to T2 and T3 (assuming Ts_values = [T1, T2, T3])
+    bad_idx = [3];
+
+    subplot(3,1,1);
+    plot(Results.Ts, Results.RiseTime, '-o','LineWidth',1.5); hold on;
+    plot(Results.Ts(bad_idx), Results.RiseTime(bad_idx), 'ro','MarkerSize',8,'LineWidth',1.5);
+    title(sprintf('%s: Rise Time vs Sampling Time', ctrlName), 'Interpreter','none');
+    ylabel('Rise Time [s]'); grid on;
+
+    subplot(3,1,2);
+    plot(Results.Ts, Results.SettlingTime, '-o','LineWidth',1.5); hold on;
+    plot(Results.Ts(bad_idx), Results.SettlingTime(bad_idx), 'ro','MarkerSize',8,'LineWidth',1.5);
+    title(sprintf('%s: Settling Time vs Sampling Time', ctrlName), 'Interpreter','none');
+    ylabel('Settling Time [s]'); grid on;
+
+    subplot(3,1,3);
+    plot(Results.Ts, Results.Overshoot, '-o','LineWidth',1.5); hold on;
+    plot(Results.Ts(bad_idx), Results.Overshoot(bad_idx), 'ro','MarkerSize',8,'LineWidth',1.5);
+    title(sprintf('%s: Overshoot vs Sampling Time', ctrlName), 'Interpreter','none');
+    ylabel('Overshoot [%]'); xlabel('Sampling Time [s]'); grid on;
+
+    
+    % -------------------------------------------------------------------------
+    % As sampling time increases (T2, T3), closed-loop performance worsens.
+    % In this example where we apply regulation control, performance
+    % significantly worsens at T3.
+    % -------------------------------------------------------------------------
+
+
+    % ---------------- Save table as CSV ----------------
+    csv_filename = sprintf('results_%s.csv', ctrlName);
+    writetable(Results, csv_filename);
+    fprintf('Table saved to: %s\n', csv_filename);
+
+    % ---------------- Save figure as PNG ----------------
+    fig_filename = sprintf('plot_%s.png', ctrlName);
+    saveas(gcf, fig_filename);
+    fprintf('Plot saved to: %s\n', fig_filename);
+    
+
+end
+
+ssm_50degStep(model_name, step_ref, Ts_values);
